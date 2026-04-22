@@ -75,18 +75,19 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
           throw new Error(`El CUIT ${cuit} extraído del PDF no es válido (dígito verificador incorrecto).`);
         }
 
-        // Fix #2: Regex mejorado - número de cuota limitado a 1-4 dígitos
-        // con word boundary para evitar capturar CUITs u otros números largos.
-        // Formato: (Nro) (Capital) (Int.Fin) (Int.Pun) (Total1) (Fecha1) [(Total2) (Fecha2)]
-        // Se usa \s+ flexible para tolerar espacios extras que pdf.js puede insertar
+        // El PDF de AFIP tiene 2 filas por cuota:
+        // Fila 1 (1er vto): Nro | Capital | Int.Fin | Int.Res | Total | Fecha
+        // Fila 2 (2do vto):                Int.Fin | Int.Res | Total | Fecha
+        // Al unir con pdf.js quedan consecutivas:
+        // (Nro) (Capital) (IntFin1) (IntRes1) (Total1) (Fecha1) (IntFin2) (IntRes2) (Total2) (Fecha2)
         const quotas: Quota[] = [];
-        const rowRegex = /\b(\d{1,4})\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
+        const rowRegex = /\b(\d{1,4})\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
         
         let match;
         while ((match = rowRegex.exec(fullText)) !== null) {
           const quotaNum = parseInt(match[1]);
           
-          // Fix #2: Validar que el número de cuota sea razonable
+          // Validar que el número de cuota sea razonable (1-999)
           if (quotaNum < 1 || quotaNum > 999) continue;
 
           const capital = parseAmount(match[2]);
@@ -95,8 +96,9 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
           const total1 = parseAmount(match[5]);
           const date1 = parseDate(match[6]);
           
-          const total2 = match[7] ? parseAmount(match[7]) : null;
-          const date2 = match[8] ? parseDate(match[8]) : null;
+          // Grupos 7-10: datos del 2do vencimiento (IntFin2, IntRes2, Total2, Fecha2)
+          const total2 = match[9] ? parseAmount(match[9]) : null;
+          const date2 = match[10] ? parseDate(match[10]) : null;
 
           if (date1) {
             quotas.push({
