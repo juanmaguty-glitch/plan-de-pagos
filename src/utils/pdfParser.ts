@@ -78,6 +78,7 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
         // Fix #2: Regex mejorado - número de cuota limitado a 1-4 dígitos
         // con word boundary para evitar capturar CUITs u otros números largos.
         // Formato: (Nro) (Capital) (Int.Fin) (Int.Pun) (Total1) (Fecha1) [(Total2) (Fecha2)]
+        // Se usa \s+ flexible para tolerar espacios extras que pdf.js puede insertar
         const quotas: Quota[] = [];
         const rowRegex = /\b(\d{1,4})\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
         

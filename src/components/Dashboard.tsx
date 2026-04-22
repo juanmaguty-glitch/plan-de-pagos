@@ -49,25 +49,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ plans }) => {
           proj.capitalFirstDueDate += quota.capital;
           proj.interestFirstDueDate += (quota.financialInterest + quota.compensatoryInterest);
           
-          // Fix #1: Cálculo mejorado del 2do vencimiento
+          // Cálculo del 2do vencimiento
           // En planes AFIP, el capital no varía entre vencimientos.
           // La diferencia entre total2 y total1 es recargo por mora.
+          const effectiveTotal2 = quota.total2 ?? quota.total;
+          proj.totalSecondDueDate += effectiveTotal2;
+          proj.capitalSecondDueDate += quota.capital;
           if (quota.total2) {
-             proj.totalSecondDueDate += quota.total2;
-             proj.capitalSecondDueDate += quota.capital;
-             // Intereses al 2do vto = financiero + resarcitorio originales + recargo por mora
-             const interestAt2nd = quota.total2 - quota.capital;
-             proj.interestSecondDueDate += Math.max(interestAt2nd, 0);
+             proj.interestSecondDueDate += Math.max(quota.total2 - quota.capital, 0);
           } else {
-             // Sin 2do vencimiento explícito, se replica el 1er vto
-             proj.totalSecondDueDate += quota.total;
-             proj.capitalSecondDueDate += quota.capital;
              proj.interestSecondDueDate += (quota.financialInterest + quota.compensatoryInterest);
           }
           proj.breakdown.push({ 
             planNumber: plan.planNumber, 
             amount1: quota.total, 
-            amount2: quota.total2 || quota.total 
+            amount2: effectiveTotal2
           });
         }
       });
