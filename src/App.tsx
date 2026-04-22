@@ -75,12 +75,26 @@ function App() {
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20; // 10mm margin on each side
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       pdf.setFontSize(16);
       pdf.text('Reporte de Planes de Pago AFIP', 10, 15);
       
-      pdf.addImage(imgData, 'JPEG', 10, 25, pdfWidth - 20, pdfHeight - 20);
+      let heightLeft = imgHeight;
+      let position = 25; // Top margin for the first page
+      
+      pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - position);
+      
+      while (heightLeft > 0) {
+        position = position - pageHeight; // Shift image up
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
       pdf.save('Reporte_Planes_AFIP.pdf');
     } catch (err) {
       console.error('Error al exportar a PDF', err);

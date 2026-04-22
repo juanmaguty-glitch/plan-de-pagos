@@ -77,8 +77,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ plans }) => {
             <tr>
               <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>Mes</th>
               <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>Planes involucrados</th>
-              <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>Total al 1er vto</th>
-              <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>Total al 2do vto</th>
+              <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>
+                Total al 1er vto
+                <div style={{ fontSize: '0.8rem', fontWeight: 'normal', opacity: 0.9, marginTop: '4px' }}>fecha estimada 16 de cada mes</div>
+              </th>
+              <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>
+                Total al 2do vto
+                <div style={{ fontSize: '0.8rem', fontWeight: 'normal', opacity: 0.9, marginTop: '4px' }}>fecha estimada 26 de cada mes</div>
+              </th>
               <th style={{ backgroundColor: '#6b7280', color: 'white', borderRight: '2px solid white', padding: '12px 8px', textAlign: 'center' }}>Desglose 1er cuota</th>
               <th style={{ backgroundColor: '#6b7280', color: 'white', padding: '12px 8px', textAlign: 'center' }}>Plan</th>
             </tr>
