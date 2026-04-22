@@ -78,9 +78,11 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
         // El PDF de AFIP tiene 2 filas por cuota:
         // Fila 1 (1er vto): Nro | Capital | Int.Fin | Int.Res | Total | Fecha
         // Fila 2 (2do vto):                Int.Fin | Int.Res | Total | Fecha
-        // Al unir con pdf.js quedan consecutivas:
-        // (Nro) (Capital) (IntFin1) (IntRes1) (Total1) (Fecha1) (IntFin2) (IntRes2) (Total2) (Fecha2)
+        // Al unir con pdf.js quedan consecutivas en el texto.
         const quotas: Quota[] = [];
+        
+        // Regex mejorado: capturamos las 2 filas de la cuota.
+        // La segunda parte es opcional pero buscamos que coincida con el patrón de 4 columnas adicionales.
         const rowRegex = /\b(\d{1,4})\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
         
         let match;
@@ -96,7 +98,7 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
           const total1 = parseAmount(match[5]);
           const date1 = parseDate(match[6]);
           
-          // Grupos 7-10: datos del 2do vencimiento (IntFin2, IntRes2, Total2, Fecha2)
+          // Datos del 2do vencimiento (IntFin2, IntRes2, Total2, Fecha2)
           const total2 = match[9] ? parseAmount(match[9]) : null;
           const date2 = match[10] ? parseDate(match[10]) : null;
 
@@ -134,7 +136,6 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
         resolve(plan);
       } catch (err) {
         console.error(err);
-        // Preservar mensajes específicos, envolver errores desconocidos
         if (err instanceof Error) {
           reject(err);
         } else {

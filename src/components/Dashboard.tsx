@@ -138,8 +138,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ plans }) => {
                               <td rowSpan={proj.breakdown.length} className={cn('pt-cell', 'pt-mid', 'pt-right', 'pt-sep')}>{formatCurrency(proj.interestSecondDueDate)}</td>
                             </>
                           )}
-                          <td className={cn('pt-cell', 'pt-alt', 'pt-right')}>{formatCurrency(item.amount1)}</td>
-                          <td className={cn('pt-cell', 'pt-alt', 'pt-right')}>{formatCurrency(item.amount2)}</td>
+                          <td className={cn('pt-cell', 'pt-alt', 'pt-right', item.amount2 > item.amount1 ? 'font-bold' : '')}>
+                            {formatCurrency(item.amount1)}
+                          </td>
+                          <td className={cn('pt-cell', 'pt-alt', 'pt-right', item.amount2 > item.amount1 ? 'font-bold' : '')} style={{ color: item.amount2 > item.amount1 ? '#b91c1c' : 'inherit' }}>
+                            {formatCurrency(item.amount2)}
+                          </td>
                           <td className={cn('pt-cell', 'pt-center')}>{item.planNumber}</td>
                         </tr>
                       );
