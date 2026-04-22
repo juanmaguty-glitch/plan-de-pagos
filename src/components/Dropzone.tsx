@@ -1,12 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 
 interface DropzoneProps {
   onFileDrop: (files: File[]) => void;
+  onError?: (message: string) => void;
   loading: boolean;
 }
 
-export const Dropzone: React.FC<DropzoneProps> = ({ onFileDrop, loading }) => {
+export const Dropzone: React.FC<DropzoneProps> = ({ onFileDrop, onError, loading }) => {
   const [isDragActive, setIsDragActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -18,29 +20,32 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFileDrop, loading }) => {
     }
   }, []);
 
+  const processPdfFiles = useCallback((fileList: FileList) => {
+    const files = Array.from(fileList).filter(f => f.type === 'application/pdf');
+    if (files.length > 0) {
+      onFileDrop(files);
+    } else {
+      onError?.('Por favor, subí solo archivos PDF.');
+    }
+  }, [onFileDrop, onError]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
-      if (files.length > 0) {
-        onFileDrop(files);
-      } else {
-        alert('Por favor, sube solo archivos PDF.');
-      }
+      processPdfFiles(e.dataTransfer.files);
     }
-  }, [onFileDrop]);
+  }, [processPdfFiles]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
-      if (files.length > 0) {
-        onFileDrop(files);
-      } else {
-        alert('Por favor, sube solo archivos PDF.');
-      }
+      processPdfFiles(e.target.files);
+    }
+    // Fix #9: Resetear el input para permitir resubir el mismo archivo
+    if (inputRef.current) {
+      inputRef.current.value = '';
     }
   };
 
@@ -51,11 +56,12 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFileDrop, loading }) => {
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
-      onClick={() => document.getElementById('fileUpload')?.click()}
+      onClick={() => inputRef.current?.click()}
     >
       <input 
         type="file" 
-        id="fileUpload" 
+        id="fileUpload"
+        ref={inputRef}
         multiple 
         accept="application/pdf" 
         style={{ display: 'none' }} 

@@ -21,9 +21,29 @@ const parseDate = (val: string): Date | null => {
   return null;
 };
 
+/**
+ * Valida un CUIT argentino con el algoritmo de módulo 11.
+ */
+const isValidCuit = (cuit: string): boolean => {
+  if (!/^\d{11}$/.test(cuit)) return false;
+  const multipliers = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const digits = cuit.split('').map(Number);
+  const checkDigit = digits[10];
+  const sum = multipliers.reduce((acc, mult, idx) => acc + digits[idx] * mult, 0);
+  const remainder = sum % 11;
+  const expected = remainder === 0 ? 0 : remainder === 1 ? 9 : 11 - remainder;
+  return checkDigit === expected;
+};
+
 export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
+    // Fix #4: Handler de error para FileReader
+    reader.onerror = () => {
+      reject(new Error(`No se pudo leer el archivo "${file.name}". Verificá que no esté corrupto o en uso.`));
+    };
+
     reader.onload = async function () {
       try {
         const typedarray = new Uint8Array(this.result as ArrayBuffer);
@@ -49,20 +69,25 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
           throw new Error('No se pudo encontrar el Número de Plan en el PDF.');
         }
 
-        // Para las cuotas es más complejo porque es una tabla.
-        // Vamos a buscar patrones de vencimientos: nn/nn/nnnn
-        // Un patrón típico de línea de cuota 1: "1 276.894,72 106.544,60 - 383.439,32 16/04/2026"
-        // Pero al hacer join(' '), los espacios pueden variar.
-        
-        // Estrategia: Buscamos filas que comiencen con el número de cuota, seguidos de importes y fechas.
-        // Formato esperado: (Nro) (Capital) (Int.Fin) (Int.Pun) (Total1) (Fecha1) [(Total2) (Fecha2)]
-        // Ej: "1 276.894,72 106.544,60 - 383.439,32 16/04/2026 411.014,78 26/04/2026"
+        // Fix #12: Validar CUIT con dígito verificador
+        const cuit = cuitMatch ? cuitMatch[1] : 'Desconocido';
+        if (cuit !== 'Desconocido' && !isValidCuit(cuit)) {
+          throw new Error(`El CUIT ${cuit} extraído del PDF no es válido (dígito verificador incorrecto).`);
+        }
+
+        // Fix #2: Regex mejorado - número de cuota limitado a 1-4 dígitos
+        // con word boundary para evitar capturar CUITs u otros números largos.
+        // Formato: (Nro) (Capital) (Int.Fin) (Int.Pun) (Total1) (Fecha1) [(Total2) (Fecha2)]
         const quotas: Quota[] = [];
-        const rowRegex = /(\d+)\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
+        const rowRegex = /\b(\d{1,4})\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
         
         let match;
         while ((match = rowRegex.exec(fullText)) !== null) {
           const quotaNum = parseInt(match[1]);
+          
+          // Fix #2: Validar que el número de cuota sea razonable
+          if (quotaNum < 1 || quotaNum > 999) continue;
+
           const capital = parseAmount(match[2]);
           const financialInt = parseAmount(match[3]);
           const compensatoryInt = parseAmount(match[4]);
@@ -86,9 +111,17 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
           }
         }
 
+        // Fix #3: Validar que se hayan extraído cuotas
+        if (quotas.length === 0) {
+          throw new Error(
+            `Se encontró el plan ${planMatch[1]} pero no se pudieron extraer cuotas. ` +
+            `Verificá que el PDF sea un plan de Mis Facilidades válido con tabla de cuotas.`
+          );
+        }
+
         const plan: PaymentPlan = {
           planNumber: planMatch[1],
-          cuit: cuitMatch ? cuitMatch[1] : 'Desconocido',
+          cuit: cuit,
           name: nameMatch ? nameMatch[1].trim() : 'Desconocido',
           consolidationDate: dateMatch ? parseDate(dateMatch[1]) : null,
           quotas: quotas,
@@ -98,7 +131,12 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
         resolve(plan);
       } catch (err) {
         console.error(err);
-        reject(new Error('Error al leer el PDF. Asegúrate de que sea un plan de Mis Facilidades válido.'));
+        // Preservar mensajes específicos, envolver errores desconocidos
+        if (err instanceof Error) {
+          reject(err);
+        } else {
+          reject(new Error('Error al leer el PDF. Asegúrate de que sea un plan de Mis Facilidades válido.'));
+        }
       }
     };
     reader.readAsArrayBuffer(file);

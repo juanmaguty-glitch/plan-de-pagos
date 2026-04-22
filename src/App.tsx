@@ -1,13 +1,34 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Dropzone } from './components/Dropzone';
 import { Dashboard } from './components/Dashboard';
 import { PlanList } from './components/PlanList';
 import { extractPlanFromPDF } from './utils/pdfParser';
 import type { PaymentPlan } from './types';
 
+interface Notification {
+  id: number;
+  message: string;
+  type: 'error' | 'success' | 'info';
+}
+
 function App() {
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
+  // Fix #8: Sistema de notificaciones en lugar de alert()
+  const addNotification = useCallback((message: string, type: 'error' | 'success' | 'info' = 'info') => {
+    const id = Date.now() + Math.random();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 6000);
+  }, []);
+
+  const dismissNotification = useCallback((id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   // Se eliminó la persistencia en LocalStorage según lo solicitado.
 
@@ -39,18 +60,25 @@ function App() {
 
     if (newPlans.length > 0) {
       setPlans(prev => [...prev, ...newPlans]);
+      addNotification(`Se cargaron ${newPlans.length} plan(es) correctamente.`, 'success');
     }
 
     if (errors.length > 0) {
-      alert(errors.join('\n'));
+      errors.forEach(e => addNotification(e, 'error'));
     }
     setLoading(false);
   };
 
+  // Fix #8: Modal de confirmación en lugar de confirm()
   const handleRemove = (planNumber: string) => {
-    if (confirm(`¿Estás seguro de eliminar el plan ${planNumber}?`)) {
-      setPlans(prev => prev.filter(p => p.planNumber !== planNumber));
-    }
+    setConfirmModal({
+      message: `¿Estás seguro de eliminar el plan ${planNumber}?`,
+      onConfirm: () => {
+        setPlans(prev => prev.filter(p => p.planNumber !== planNumber));
+        setConfirmModal(null);
+        addNotification(`Plan ${planNumber} eliminado.`, 'info');
+      }
+    });
   };
 
   const exportPDF = () => {
@@ -59,6 +87,31 @@ function App() {
 
   return (
     <div className="container">
+      {/* Notificaciones */}
+      {notifications.length > 0 && (
+        <div className="notifications-container no-print">
+          {notifications.map(n => (
+            <div key={n.id} className={`notification notification-${n.type}`}>
+              <span>{n.message}</span>
+              <button className="notification-close" onClick={() => dismissNotification(n.id)}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal de confirmación */}
+      {confirmModal && (
+        <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <p style={{ marginBottom: '1.5rem', fontSize: '1rem' }}>{confirmModal.message}</p>
+            <div className="modal-actions">
+              <button className="btn btn-danger" onClick={confirmModal.onConfirm}>Eliminar</button>
+              <button className="btn" style={{ backgroundColor: '#e5e7eb' }} onClick={() => setConfirmModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex-between mb-4">
         <div>
           <h1>Gestión de Planes de Pago</h1>
@@ -73,7 +126,7 @@ function App() {
 
       <main>
         <section className="mb-4">
-          <Dropzone onFileDrop={handleFiles} loading={loading} />
+          <Dropzone onFileDrop={handleFiles} onError={(msg) => addNotification(msg, 'error')} loading={loading} />
         </section>
 
         {plans.length > 0 ? (
