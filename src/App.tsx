@@ -4,8 +4,6 @@ import { Dashboard } from './components/Dashboard';
 import { PlanList } from './components/PlanList';
 import { extractPlanFromPDF } from './utils/pdfParser';
 import type { PaymentPlan } from './types';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 function App() {
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
@@ -55,54 +53,8 @@ function App() {
     }
   };
 
-  const exportPDF = async () => {
-    const element = document.getElementById('dashboard-report');
-    if (!element) return;
-    
-    // Ocultar botones temporalmente (ej. Eliminar plan)
-    const buttons = element.querySelectorAll('button');
-    buttons.forEach(btn => btn.style.display = 'none');
-    
-    try {
-      const canvas = await html2canvas(element, { scale: 2 });
-      // Usar JPEG con compresión (0.8) reduce drásticamente el peso del archivo comparado a PNG
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth - 20; // 10mm margin on each side
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.setFontSize(16);
-      pdf.text('Reporte de Planes de Pago AFIP', 10, 15);
-      
-      let heightLeft = imgHeight;
-      let position = 25; // Top margin for the first page
-      
-      pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - position);
-      
-      while (heightLeft > 0) {
-        position = position - pageHeight; // Shift image up
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      
-      pdf.save('Reporte_Planes_AFIP.pdf');
-    } catch (err) {
-      console.error('Error al exportar a PDF', err);
-      alert('Hubo un error al exportar el PDF.');
-    } finally {
-      // Restaurar botones
-      buttons.forEach(btn => btn.style.display = '');
-    }
+  const exportPDF = () => {
+    window.print();
   };
 
   return (

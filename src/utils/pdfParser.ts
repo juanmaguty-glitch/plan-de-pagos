@@ -54,42 +54,34 @@ export const extractPlanFromPDF = async (file: File): Promise<PaymentPlan> => {
         // Un patrón típico de línea de cuota 1: "1 276.894,72 106.544,60 - 383.439,32 16/04/2026"
         // Pero al hacer join(' '), los espacios pueden variar.
         
-        // Estrategia simplificada: Buscamos todas las fechas de vencimiento con sus importes previos.
-        // Usaremos una regex para detectar importes y fechas.
+        // Estrategia: Buscamos filas que comiencen con el número de cuota, seguidos de importes y fechas.
+        // Formato esperado: (Nro) (Capital) (Int.Fin) (Int.Pun) (Total1) (Fecha1) [(Total2) (Fecha2)]
+        // Ej: "1 276.894,72 106.544,60 - 383.439,32 16/04/2026 411.014,78 26/04/2026"
         const quotas: Quota[] = [];
-        
-        // Regex para buscar (Total) y (Fecha) asumiendo que están juntos al final de la fila
-        // Ej: 383.439,32 16/04/2026
-        const rowRegex = /([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})/g;
+        const rowRegex = /(\d+)\s+([\d.,]+)\s+([\d.,]+|-)\s+([\d.,]+|-)\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([\d.,]+)\s+(\d{2}\/\d{2}\/\d{4}))?/g;
         
         let match;
-        const potentialRows = [];
         while ((match = rowRegex.exec(fullText)) !== null) {
-          // match[1] es un importe potencial, match[2] es la fecha
-          if (match[1].length > 3) { // Filtrar basura
-             potentialRows.push({
-               total: parseAmount(match[1]),
-               date: parseDate(match[2]),
-               dateStr: match[2]
-             });
-          }
-        }
-
-        // Agrupar filas de a 2 (vencimiento 1 y vencimiento 2 de cada cuota)
-        for (let i = 0; i < potentialRows.length; i += 2) {
-          const row1 = potentialRows[i];
-          const row2 = potentialRows[i + 1];
+          const quotaNum = parseInt(match[1]);
+          const capital = parseAmount(match[2]);
+          const financialInt = parseAmount(match[3]);
+          const compensatoryInt = parseAmount(match[4]);
+          const total1 = parseAmount(match[5]);
+          const date1 = parseDate(match[6]);
           
-          if (row1 && row1.date) {
+          const total2 = match[7] ? parseAmount(match[7]) : null;
+          const date2 = match[8] ? parseDate(match[8]) : null;
+
+          if (date1) {
             quotas.push({
-              number: (i / 2) + 1,
-              capital: 0, // No extraemos todo para simplificar, solo totales
-              financialInterest: 0,
-              compensatoryInterest: 0,
-              total: row1.total,
-              dueDate1: row1.date,
-              dueDate2: row2 ? row2.date : null,
-              total2: row2 ? row2.total : null
+              number: quotaNum,
+              capital: capital,
+              financialInterest: financialInt,
+              compensatoryInterest: compensatoryInt,
+              total: total1,
+              dueDate1: date1,
+              dueDate2: date2,
+              total2: total2
             });
           }
         }

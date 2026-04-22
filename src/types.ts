@@ -22,7 +22,11 @@ export interface MonthlyProjection {
   monthYear: string; // e.g., "04/2026"
   date: Date; // para ordenar
   totalFirstDueDate: number;
+  capitalFirstDueDate: number;
+  interestFirstDueDate: number;
   totalSecondDueDate: number;
+  capitalSecondDueDate: number;
+  interestSecondDueDate: number;
   plansCount: number;
-  breakdown: { planNumber: string; amount: number; }[];
+  breakdown: { planNumber: string; amount1: number; amount2: number; }[];
 }

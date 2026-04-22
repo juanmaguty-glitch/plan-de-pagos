@@ -145,3 +145,53 @@ th {
 .text-muted { color: var(--text-muted); }
 .text-sm { font-size: 0.875rem; }
 .font-bold { font-weight: 700; }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  .container {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .no-print, .btn, .dropzone {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  #dashboard-report {
+    padding: 0 !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Force landscape for large tables */
+  .projection-table {
+    width: 100% !important;
+    font-size: 8pt !important;
+  }
+}
