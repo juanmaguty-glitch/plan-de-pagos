@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { PlanList } from './components/PlanList';
 import { extractPlanFromPDF } from './utils/pdfParser';
 import type { PaymentPlan } from './types';
+import afipGuideImg from './assets/afip_guide.png';
 
 interface Notification {
   id: number;
@@ -145,10 +146,35 @@ function App() {
             </section>
           </div>
         ) : (
-          <div className="card text-center" style={{ padding: '3rem 2rem' }}>
-            <h3>No hay planes cargados</h3>
-            <p className="text-muted">Carga uno o más PDFs para ver la proyección de fondos.</p>
-          </div>
+          <>
+            <div className="card text-center no-print" style={{ padding: '3rem 2rem' }}>
+              <h3>No hay planes cargados</h3>
+              <p className="text-muted">Carga uno o más PDFs para ver la proyección de fondos.</p>
+            </div>
+
+            <section className="guide-container no-print">
+              <h2 className="guide-title">¿Cómo obtener el archivo de AFIP?</h2>
+              <div className="guide-content">
+                <ul className="guide-steps">
+                  <li className="guide-step">
+                    <span className="step-number">1</span>
+                    <span className="step-text">Ingresa a la página de AFIP y busca el servicio <b>Mis Facilidades</b>.</span>
+                  </li>
+                  <li className="guide-step">
+                    <span className="step-number">2</span>
+                    <span className="step-text">Selecciona el plan deseado y entra en <b>Detalle del Plan</b>.</span>
+                  </li>
+                  <li className="guide-step">
+                    <span className="step-number">3</span>
+                    <span className="step-text">Busca y haz clic en el botón <b>Plan de pagos</b> para descargar el PDF.</span>
+                  </li>
+                </ul>
+                <div className="guide-image-container">
+                  <img src={afipGuideImg} alt="Modelo de archivo AFIP" className="guide-image" />
+                </div>
+              </div>
+            </section>
+          </>
         )}
       </main>
     </div>

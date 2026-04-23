@@ -363,3 +363,89 @@ th {
     font-size: 8pt !important;
   }
 }
+
+/* Guide Section */
+.guide-container {
+  margin-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.guide-title {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  font-size: 1.5rem;
+}
+
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.guide-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.guide-step {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: transform 0.2s;
+}
+
+.guide-step:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.step-number {
+  background-color: var(--primary);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.step-text b {
+  color: var(--primary);
+}
+
+.guide-image-container {
+  flex: 1.5;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  background: white;
+  padding: 0.5rem;
+}
+
+.guide-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: calc(var(--radius) - 4px);
+}
+
+@media (min-width: 992px) {
+  .guide-content {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
